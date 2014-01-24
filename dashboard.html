@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html>
+   <head>
+	<meta charset ="utf-8">
+	<title> Bid Reporting Application </title>
+	<link rel="stylesheet" href="bootstrap-3.0.0/dist/css/bootstrap.min.css" media="screen" type="text/css"/>
+	<script type="text/javascript" src="http://mbostock.github.com/d3/d3.js?2.6.0"></script>
+    <script type="text/javascript" src="http://mbostock.github.com/d3/d3.csv.js?2.6.0"></script>
+    <style>
+    body {
+	  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+	  margin: auto;
+	  position: relative;
+	  width: 960px;
+	}
+	
+	text {
+	  font: 10px sans-serif;
+	}
+	
+	.axis path,
+	.axis line {
+	  fill: none;
+	  stroke: #000;
+	  shape-rendering: crispEdges;
+	}
+
+.line {
+  fill: none;
+  stroke: #a05d56;
+  stroke-width: 1.5px;
+}
+
+.bar rect {
+  fill: #98abc5;
+}
+
+.bar text.value {
+  fill: white;
+}
+
+.bar1 rect {
+  fill: #8a89a6;
+}
+
+.bar1 text.value {
+  fill: white;
+}
+.axis {
+  shape-rendering: crispEdges;
+}
+
+.axis path {
+  fill: none;
+}
+
+.x.axis line {
+  stroke: #fff;
+  stroke-opacity: .8;
+}
+
+.y.axis path {
+  stroke: black;
+}
+	
+	form {
+	  position: absolute;
+	  right: 10px;
+	  top: 10px;
+	}
+	
+    </style>
+	
+   </head>
+
+   <body>
+         <div class="container">
+            <div class="masthead">
+	        <h3 class="text-muted">Dashboard - Admin Panel</h3>
+	        <ul class="nav nav-justified">
+	          <li class="active"><a href="index.html">Home</a></li>
+	          <li><a href="dashboard.html">Dashboard</a></li>
+	        </ul>
+	      </div>
+      	
+      	<div class="block">
+			<div class="jumbotron">
+                 <h3 class="text-center">Dashboard</h3>
+             </div>
+		</div>
+
+	    <script src="http://code.jquery.com/jquery-1.10.1.min.js"></script>
+        <script src="js/bootstrap.js"></script>
+        <script src="vendors/easypiechart/jquery.easy-pie-chart.js"></script>
+        <script src="http://d3js.org/d3.v3.js"></script>
+    <script type="text/javascript">
+
+var m = [100, 100, 100, 100],
+    w = 960 - m[1] - m[3],
+    h = 930 - m[0] - m[2];
+
+var format = d3.format(",.0f");
+
+var x = d3.scale.linear().range([0, w]),
+    y = d3.scale.ordinal().rangeRoundBands([0, h], .1);
+    
+var x1 = d3.scale.linear().domain([0, 100]).range([0, w/2]);
+
+var xAxis = d3.svg.axis().scale(x).orient("top").tickSize(-h),
+    x1Axis = d3.svg.axis().scale(x1).orient("bottom").tickSize(0),
+    yAxis = d3.svg.axis().scale(y).orient("left").tickSize(0);
+
+var svg = d3.select("body").append("svg")
+    .attr("width", w + m[1] + m[3])
+    .attr("height", h + m[0] + m[2])
+  .append("g")
+    .attr("transform", "translate(" + m[3] + "," + m[0] + ")");
+
+var line = d3.svg.line()
+.x(function(d) { return x1(d.recognition_rate); })
+.y(function(d) { return y(d.date); });
+
+d3.csv("data.csv", function(data) {
+
+  // Parse numbers, and sort by value.
+  data.forEach(function(d) { d.total_bid = +d.total_bid; });
+  data.forEach(function(d) { d.recognized_bid = +d.recognized_bid; });
+
+  // Set the scale domain.
+  x.domain([0, d3.max(data, function(d) { return d.total_bid + d.recognized_bid; })]);
+  y.domain(data.map(function(d) { return d.date; }));
+
+
+  var bar = svg.selectAll("g.bar")
+      .data(data)
+    .enter().append("g")
+      .attr("class", "bar")
+      .attr("transform", function(d) { return "translate(0," + y(d.date) + ")"; });
+
+  bar.append("rect")
+      .attr("width", function(d) { return x(d.total_bid); })
+      .attr("height", y.rangeBand());
+
+  bar.append("text")
+      .attr("class", "value")
+      .attr("x", function(d) { return x(d.total_bid); })
+      .attr("y", y.rangeBand() / 2)
+      .attr("dx", -3)
+      .attr("dy", ".35em")
+      .attr("text-anchor", "end")
+      .text(function(d) { return format(d.total_bid); });
+
+
+  var bar1 = svg.selectAll("g.bar1")
+      .data(data)
+    .enter().append("g")
+      .attr("class", "bar1")
+      .attr("transform", function(d) { return "translate(" + x(d.total_bid) + "," +  y(d.date) + ")"; });
+
+  bar1.append("rect")
+      .attr("width", function(d) { return x(d.recognized_bid); })
+      .attr("height", y.rangeBand());
+
+  bar1.append("text")
+      .attr("class", "value")
+      .attr("x", function(d) { return x(d.recognized_bid); })
+      .attr("y", y.rangeBand() / 2)
+      .attr("dx", -3)
+      .attr("dy", ".35em")
+      .attr("text-anchor", "end")
+      .text(function(d) { return format(d.recognized_bid); });
+
+  svg.append("path")
+  .datum(data)
+  .attr("class", "line")
+  .attr("d", line);
+ 
+  svg.append("g")
+      .attr("class", "x axis")
+      .call(xAxis)
+      .append("text")
+      .attr("transform", "rotate(0)")
+      .attr("y", -30)
+      .attr("x", w/2) 
+      .style("text-anchor", "end")
+      .text("Total Bids and Recognized Bids") ;
+  
+  svg.append("g")
+  .attr("class", "x axis")
+  .attr("transform", "translate(0," + h + ")")
+  .call(x1Axis)
+  .append("text")
+  .attr("transform", "rotate(0)")
+  .attr("y", 30)
+  .attr("x", w/4) 
+  .style("text-anchor", "end")
+  .text("Recognition Rate %") 
+  //.text("Recognition Rate (%)");
+    
+  svg.append("g")
+      .attr("class", "y axis")
+      .call(yAxis)
+      .append("text")
+      .attr("transform", "rotate(-90)")
+      .attr("y", -50)
+      .attr("x", -h/2)
+      .attr("dy", ".71em")
+      .style("text-anchor", "center")
+      .text("Dates");
+});
+
+    </script>
+	</body>
+</html>
